@@ -11,6 +11,7 @@ class GameScene: SKScene {
     var gameTimer: Timer?
     var fireworks = [SKNode]()
     var scoreLabel: SKLabelNode!
+    var explodeButton: SKSpriteNode!
 
     let leftEdge = -22
     let bottomEdge = -22
@@ -31,9 +32,15 @@ class GameScene: SKScene {
         
         scoreLabel = SKLabelNode(fontNamed: "Chalkduster")
         scoreLabel.text = "Score: 0"
-        scoreLabel.horizontalAlignmentMode = .right
-        scoreLabel.position = CGPoint(x: 974, y: 50)
+        scoreLabel.horizontalAlignmentMode = .left
+        scoreLabel.position = CGPoint(x: 50, y: 50)
         addChild(scoreLabel)
+        
+        explodeButton = SKSpriteNode(imageNamed: "buttonReleased")
+        explodeButton.setScale(0.5)
+        explodeButton.position = CGPoint(x: 910, y: 100)
+        explodeButton.name = "buttonOff"
+        addChild(explodeButton)
         
         gameTimer = Timer.scheduledTimer(timeInterval: 6, target: self, selector: #selector(launchFireworks), userInfo: nil, repeats: true)
     }
@@ -45,12 +52,13 @@ class GameScene: SKScene {
         
         // Create a rocket sprite node, give it the name "firework" so we know that it's the important thing, adjust its colorBlendFactor property so that we can color it, then add it to the container node.
         let firework = SKSpriteNode(imageNamed: "rocket")
+        firework.setScale(0.4)
         firework.colorBlendFactor = 1
         firework.name = "firework"
         node.addChild(firework)
         
         // Give the firework sprite node one of three random colors: cyan, green or red.
-        firework.color = [UIColor.cyan, .green, .red].randomElement()!
+        firework.color = [UIColor.yellow, .green, .red].randomElement()!
         
         // Create a UIBezierPath that will represent the movement of the firework.
         let path = UIBezierPath()
@@ -68,7 +76,7 @@ class GameScene: SKScene {
         
         // Create particles behind the rocket to make it look like the fireworks are lit.
         if let emitter = SKEmitterNode(fileNamed: "fuse") {
-            emitter.position = CGPoint(x: 0, y: -22)
+            emitter.position = CGPoint(x: 0, y: -40)
             node.addChild(emitter)
         }
         
@@ -140,14 +148,43 @@ class GameScene: SKScene {
         }
     }
     
+    func didHitButton(_ touches: Set<UITouch>) -> Bool {
+        guard let touch = touches.first else { return false }
+
+        let location = touch.location(in: self)
+        let nodesAtPoint = nodes(at: location)
+        
+        if let button = nodesAtPoint.first(where: {
+            $0.name == "buttonOff"
+        }) as? SKSpriteNode {
+            button.name = "buttonOn"
+            button.texture = SKTexture(imageNamed: "buttonPressed")
+            explodeFireworks()
+            return true
+        }
+        
+        return false
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
+        if didHitButton(touches) {
+            return
+        }
         checkTouches(touches)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesMoved(touches, with: event)
         checkTouches(touches)
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        if explodeButton.name == "buttonOn" {
+            explodeButton.name = "buttonOff"
+            explodeButton.texture = SKTexture(imageNamed: "buttonReleased")
+        }
     }
     
     override func update(_ currentTime: TimeInterval) {
@@ -206,4 +243,11 @@ class GameScene: SKScene {
             score += 4000
         }
     }
+}
+
+#Preview {
+    let storyboard = UIStoryboard(name: "Main", bundle: nil)
+    let vc = storyboard.instantiateViewController(withIdentifier: "Home")
+    let navController = UINavigationController(rootViewController: vc)
+    return navController
 }

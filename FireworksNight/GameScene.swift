@@ -12,6 +12,7 @@ class GameScene: SKScene {
     var fireworks = [SKNode]()
     var scoreLabel: SKLabelNode!
     var explodeButton: SKSpriteNode!
+    var instructionLabel: SKLabelNode!
 
     let leftEdge = -22
     let bottomEdge = -22
@@ -22,6 +23,16 @@ class GameScene: SKScene {
             scoreLabel.text = "Score: \(score)"
         }
     }
+    
+    var lifePoints = 3
+    var hearts: [Heart] = []
+    
+    var gameOver = false {
+        didSet {
+            changeGameOver()
+        }
+    }
+    var gameOverNode: SKSpriteNode!
     
     override func didMove(to view: SKView) {
         let background = SKSpriteNode(imageNamed: "background")
@@ -36,14 +47,24 @@ class GameScene: SKScene {
         scoreLabel.position = CGPoint(x: 50, y: 50)
         addChild(scoreLabel)
         
+        setupLifePoints()
+        
         explodeButton = SKSpriteNode(imageNamed: "buttonReleased")
         explodeButton.setScale(0.5)
         explodeButton.position = CGPoint(x: 910, y: 100)
         explodeButton.name = "buttonOff"
-        explodeButton.zPosition = 3
+        explodeButton.zPosition = 4
         addChild(explodeButton)
         
-        let instructionLabel = SKLabelNode(fontNamed: "Chalkduster")
+        gameOverNode = SKSpriteNode(imageNamed: "gameOver")
+        gameOverNode.position = CGPoint(x: frame.width / 2, y: frame.height / 2)
+        gameOverNode.alpha = 0
+        gameOverNode.setScale(1.5)
+        gameOverNode.colorBlendFactor = 0.7
+        gameOverNode.color = .systemYellow
+        addChild(gameOverNode)
+        
+        instructionLabel = SKLabelNode(fontNamed: "Chalkduster")
         instructionLabel.numberOfLines = 0
         instructionLabel.fontSize = 20
         instructionLabel.text = "Select rockets of the same color,\nclick \"explode\" or shake the\ndevice to score points."
@@ -62,6 +83,16 @@ class GameScene: SKScene {
         gameTimer = Timer.scheduledTimer(timeInterval: 6, target: self, selector: #selector(launchFireworks), userInfo: nil, repeats: true)
     }
     
+    func setupLifePoints() {
+        for xPosition in [80, 130, 180] {
+            let heart = Heart()
+            heart.configure(at: CGPoint(x: xPosition, y: 120))
+            heart.zPosition = 0
+            addChild(heart)
+            hearts.append(heart)
+        }
+    }
+    
     func createFirework(xMovement: CGFloat, x: Int, y: Int) {
         // Create an SKNode that will act as the firework container, and place it at the position that was specified.
         let node = SKNode()
@@ -69,7 +100,7 @@ class GameScene: SKScene {
         
         if Int.random(in: 1...8) == 8 {
             let bomb = SKSpriteNode(imageNamed: "bomb")
-            bomb.zPosition = 2
+            bomb.zPosition = 3
             bomb.setScale(0.4)
             bomb.name = "bomb"
             node.addChild(bomb)
@@ -80,7 +111,7 @@ class GameScene: SKScene {
         } else {
             // Create a rocket sprite node, give it the name "firework" so we know that it's the important thing, adjust its colorBlendFactor property so that we can color it, then add it to the container node.
             let firework = SKSpriteNode(imageNamed: "rocket")
-            firework.zPosition = 2
+            firework.zPosition = 3
             firework.setScale(0.4)
             firework.colorBlendFactor = 1
             firework.name = "firework"
@@ -206,6 +237,12 @@ class GameScene: SKScene {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
+        
+        if gameOver {
+            restartGame()
+            return
+        }
+        
         if didHitButton(touches) {
             return
         }
@@ -282,10 +319,47 @@ class GameScene: SKScene {
         }
     }
     
+    func endGame() {
+        gameOver = true
+        gameTimer?.invalidate()
+    }
+    
+    func changeGameOver() {
+        gameOverNode.run(SKAction.fadeAlpha(to: gameOver ? 1 : 0, duration: 0.5))
+        instructionLabel.run(SKAction.fadeAlpha(to: gameOver ? 0 : 1, duration: 0.5))
+        explodeButton.run(SKAction.fadeAlpha(to: gameOver ? 0 : 1, duration: 0.5))
+        if gameOver {
+            scoreLabel.horizontalAlignmentMode = .center
+            scoreLabel.run(SKAction.move(to: CGPoint(x: frame.width / 2, y: (frame.height / 2) - 100), duration: 0.5))
+        } else {
+            scoreLabel.horizontalAlignmentMode = .left
+            scoreLabel.run(SKAction.move(to: CGPoint(x: 50, y: 50), duration: 0.5))
+        }
+    }
+    
+    func restartGame() {
+        gameOver = false
+        score = 0
+        lifePoints = 3
+        hearts.forEach {
+            $0.shrink(reverse: true)
+        }
+        gameTimer = Timer.scheduledTimer(timeInterval: 6, target: self, selector: #selector(launchFireworks), userInfo: nil, repeats: true)
+    }
+    
     func explodeBomb() {
         for (index, fireworkContainer) in fireworks.enumerated().reversed() {
             explode(firework: fireworkContainer)
             fireworks.remove(at: index)
+        }
+        
+        if lifePoints > 0 {
+            lifePoints -= 1
+            if lifePoints >= 0 {
+                hearts[lifePoints].shrink()
+            }
+        } else {
+            endGame()
         }
     }
 }

@@ -326,7 +326,7 @@ class GameScene: SKScene {
     
     func changeGameOver() {
         gameOverNode.run(SKAction.fadeAlpha(to: gameOver ? 1 : 0, duration: 0.5))
-        instructionLabel.run(SKAction.fadeAlpha(to: gameOver ? 0 : 1, duration: 0.5))
+        instructionLabel.run(SKAction.fadeAlpha(to: gameOver ? 0 : 0.5, duration: 0.5))
         explodeButton.run(SKAction.fadeAlpha(to: gameOver ? 0 : 1, duration: 0.5))
         if gameOver {
             scoreLabel.horizontalAlignmentMode = .center

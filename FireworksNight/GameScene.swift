@@ -40,7 +40,24 @@ class GameScene: SKScene {
         explodeButton.setScale(0.5)
         explodeButton.position = CGPoint(x: 910, y: 100)
         explodeButton.name = "buttonOff"
+        explodeButton.zPosition = 3
         addChild(explodeButton)
+        
+        let instructionLabel = SKLabelNode(fontNamed: "Chalkduster")
+        instructionLabel.numberOfLines = 0
+        instructionLabel.fontSize = 20
+        instructionLabel.text = "Select rockets of the same color,\nclick \"explode\" or shake the\ndevice to score points."
+        instructionLabel.zPosition = 0
+        instructionLabel.horizontalAlignmentMode = .left
+        instructionLabel.verticalAlignmentMode = .top
+        instructionLabel.position = CGPoint(x: 50, y: 620)
+        instructionLabel.alpha = 0.5
+        addChild(instructionLabel)
+        
+        let logo = SKSpriteNode(imageNamed: "logo")
+        logo.position = CGPoint(x: 140, y: 680)
+        logo.zPosition = 0
+        addChild(logo)
         
         gameTimer = Timer.scheduledTimer(timeInterval: 6, target: self, selector: #selector(launchFireworks), userInfo: nil, repeats: true)
     }
@@ -52,6 +69,7 @@ class GameScene: SKScene {
         
         // Create a rocket sprite node, give it the name "firework" so we know that it's the important thing, adjust its colorBlendFactor property so that we can color it, then add it to the container node.
         let firework = SKSpriteNode(imageNamed: "rocket")
+        firework.zPosition = 2
         firework.setScale(0.4)
         firework.colorBlendFactor = 1
         firework.name = "firework"

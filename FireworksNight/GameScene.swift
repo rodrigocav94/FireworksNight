@@ -67,16 +67,36 @@ class GameScene: SKScene {
         let node = SKNode()
         node.position = CGPoint(x: x, y: y)
         
-        // Create a rocket sprite node, give it the name "firework" so we know that it's the important thing, adjust its colorBlendFactor property so that we can color it, then add it to the container node.
-        let firework = SKSpriteNode(imageNamed: "rocket")
-        firework.zPosition = 2
-        firework.setScale(0.4)
-        firework.colorBlendFactor = 1
-        firework.name = "firework"
-        node.addChild(firework)
-        
-        // Give the firework sprite node one of three random colors: cyan, green or red.
-        firework.color = [UIColor.yellow, .green, .red].randomElement()!
+        if Int.random(in: 1...8) == 8 {
+            let bomb = SKSpriteNode(imageNamed: "bomb")
+            bomb.zPosition = 2
+            bomb.setScale(0.4)
+            bomb.name = "bomb"
+            node.addChild(bomb)
+            
+            let spin = SKAction.rotate(byAngle: .pi, duration: 0.5) // Rotate 180º for 10 seconds
+            let spinForever = SKAction.repeatForever(spin) // Repeat animation forever
+            bomb.run(spinForever) // Add action to SKSpriteNode
+        } else {
+            // Create a rocket sprite node, give it the name "firework" so we know that it's the important thing, adjust its colorBlendFactor property so that we can color it, then add it to the container node.
+            let firework = SKSpriteNode(imageNamed: "rocket")
+            firework.zPosition = 2
+            firework.setScale(0.4)
+            firework.colorBlendFactor = 1
+            firework.name = "firework"
+            node.addChild(firework)
+            
+            // Give the firework sprite node one of three random colors: cyan, green or red.
+            firework.color = [UIColor.yellow, .green, .red].randomElement()!
+            
+            // Create particles behind the rocket to make it look like the fireworks are lit.
+            if let emitter = SKEmitterNode(fileNamed: "fuse") {
+                emitter.position = CGPoint(x: 0, y: -40)
+                emitter.setScale(1.5)
+                emitter.isUserInteractionEnabled = false
+                node.addChild(emitter)
+            }
+        }
         
         // Create a UIBezierPath that will represent the movement of the firework.
         let path = UIBezierPath()
@@ -91,12 +111,6 @@ class GameScene: SKScene {
             speed: 200 // how fast it moves along the path.
         )
         node.run(move)
-        
-        // Create particles behind the rocket to make it look like the fireworks are lit.
-        if let emitter = SKEmitterNode(fileNamed: "fuse") {
-            emitter.position = CGPoint(x: 0, y: -40)
-            node.addChild(emitter)
-        }
         
         // Add the firework to our fireworks array and also to the scene.
         fireworks.append(node)
@@ -151,6 +165,12 @@ class GameScene: SKScene {
         let nodesAtPoint = nodes(at: location)
 
         for case let node as SKSpriteNode in nodesAtPoint {
+            
+            if node.name == "bomb" {
+                explodeBomb()
+                break
+            }
+            
             guard node.name == "firework" else { continue }
             
             for parent in fireworks {
@@ -259,6 +279,13 @@ class GameScene: SKScene {
             score += 2500
         default:
             score += 4000
+        }
+    }
+    
+    func explodeBomb() {
+        for (index, fireworkContainer) in fireworks.enumerated().reversed() {
+            explode(firework: fireworkContainer)
+            fireworks.remove(at: index)
         }
     }
 }
